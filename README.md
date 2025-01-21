@@ -3,7 +3,7 @@
 
 ReDiag offers visualisation tools to assess the normality of residuals and the often-overlooked assumption of linearity. The user-friendly interface enables the users with limited statistics skills to critically assess their model and correct any violations. 
 
-The application is freely accessible at <https://percysavieri.shinyapps.io/ReDiag/>
+The application is freely accessible at <https://zq9mvv-vub0square.shinyapps.io/ReDiag-research-tool/>
 
 This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
 
