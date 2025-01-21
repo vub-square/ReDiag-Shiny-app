@@ -5,6 +5,9 @@ ReDiag offers visualisation tools to assess the normality of residuals and the o
 
 The application is freely accessible at <https://percysavieri.shinyapps.io/ReDiag/>
 
+This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
+
+A tutorial of a basic example can be found as a PDF file in the GitHub folder.
 
 ### User-interface
 The web application provides a user-interface (UI) to upload data and fit the regression model under review. It is comprised of the sidebar panel (for managing inputs) and the main panel (for viewing outputs).  
