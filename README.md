@@ -39,4 +39,4 @@ The 'app.R' file is the main R file; all the others R files are called here.
   2. The server part of Shiny, written in R, contains functions which handles the input from ui and process the output within a reactive value. These functions return a reactive value output. It processes the ui input to calculate output, communicates via keywords associated to each input and output functions declared in the ui function.  
 
             
-Version 01-Mar-2024
+Version 20-Dec-2024
