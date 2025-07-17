@@ -77,9 +77,9 @@ ui <- fluidPage(
 
         mainPanel(
           width = 8,
-          tags$h4("Regression Diagnostics web-application", style = "color:#003399"),
+          tags$h4("Welcome to the Regression Diagnostics web-application", style = "color:#003399"),
           tags$p("The ReDiag app assists students and researchers with their residual analysis for linear regression models. It offers visualization tools to assess the normality of residuals and the often-overlooked assumption of linearity. The user-friendly interface enables the user to critically assess their model and correct any violations. A dynamic report can be downloaded with the results."),
-          tags$p("This app was developed by the", tags$a(href = "https://square.research.vub.be/", "Support for Quantitative and Qualitative Research (SQUARE)"), "to provide the research community with complimentary support in statistics. The SQUARE core facility is part of the", tags$a(href = "https://bisi.research.vub.be/", "Biostatistics and Medical Informatics research group (BISI)"), "at the Vrije Universiteit Brussel (VUB)."),
+          tags$p("This app was developed by the", tags$a(href = "https://square.research.vub.be/", "Support for Quantitative and Qualitative Research (SQUARE)"), "to provide the research community with complimentary support in statistics. The developers are part of the", tags$a(href = "https://bisi.research.vub.be/", "Biostatistics and Medical Informatics research group (BISI)"), "at the Vrije Universiteit Brussel (VUB)."),
           br(),
           tags$h4("Terms of use", style = "color:#003399"),
           tags$p("ReDiag is not designed for model building or variable selection. It is distributed in the hope that it may be useful in assessing regression assumptions."),
@@ -109,7 +109,7 @@ ui <- fluidPage(
         tags$div(
           style = "text-align: left; width: 100%; padding: 10px;",
           tags$h6(
-            em("Copyright 2024, Support for Quantitative and Qualitative Research, Version 20.12.24")
+            em("2025 Support for Quantitative and Qualitative Research (SQUARE)"),
           )
         )
       )# End Home sidebarLayout
@@ -162,17 +162,18 @@ ui <- fluidPage(
                     "CSV file (.csv)" = "csv",
                     "Excel file (.xlsx)" = "xlsx",
                     "SPSS file (.sav)" = "sav",
-                    "Stata Dataset (.dta)" = "dta"
+                    "Stata Dataset (.dta)" = "dta",
+                    "RDS file (.rds)" = "rds"
                   ),
                   selected = ""
                 ),
                 conditionalPanel(
-                  condition = "input.ext == 'txt' | input.ext == 'csv' | input.ext == 'xlsx' | input.ext == 'sav' | input.ext == 'dta'",
+                  condition = "input.ext == 'txt' | input.ext == 'csv' | input.ext == 'xlsx' | input.ext == 'sav' | input.ext == 'dta' | input.ext == 'rds'",
                   tryCatch(
                     fileInput("file1", strong("Select file"),
                       accept = c(
                         ".txt", ".csv", ".xlsx", ".sav", ".dta",
-                        ".CSV", ".TXT", ".XLSX", ".SAV", ".DTA"
+                        ".CSV", ".TXT", ".XLSX", ".SAV", ".DTA", ".RDS"
                       )
                     )
                   )
@@ -440,9 +441,13 @@ ui <- fluidPage(
                 tags$p(em("Approach 2: Generalized linear models")),
                 tags$p("When the model assumptions are violated even after applying transformations, this implies a multiple linear regression model poorly describes the data. The solution is to adapt the regression model to the data and model the non-normality. The generalised linear model is a generalisation of the basic regression model that makes it possible to relax the normality assumption and assume other error distributions instead. Logistic regression (binomial and multinomial data) and Poisson regression (count data) are good options."),
                 br(),
-                tags$p(em("Approach 3: Addition of omitted discrete variables and deletion of outliers")),
-                tags$p("A multimodal (i.e. more than one peak) error distribution implies that the model omitted one or more discrete predictor variables that naturally divide the data into groups. Adding these variables can help normalise the distribution of the residuals."),
-                tags$p("Checking for outliers using Cook’s Distance (an estimate of the influence of a data point) and deleting them can help normalise the distribution of the residuals and stabilise their variance."),
+                # tags$p(em("Approach 3: Addition of omitted discrete variables and deletion of outliers")),
+                # tags$p("A multimodal (i.e. more than one peak) error distribution implies that the model omitted one or more discrete predictor variables that naturally divide the data into groups. Adding these variables can help normalise the distribution of the residuals."),
+                # tags$p("Checking for outliers using Cook’s Distance (an estimate of the influence of a data point) and deleting them can help normalise the distribution of the residuals and stabilise their variance."),
+                tags$p(em("Approach 3: Addition of omitted discrete variables and handling of influential observations")),
+                tags$p("A multimodal (i.e., more than one peak) error distribution implies that the model omitted one or more discrete predictor variables that naturally divide the data into groups. Adding these variables can help normalise the distribution of the residuals."),
+                tags$p("Cook’s Distance can identify influential observations that may disproportionately affect the model. Rather than simply deleting these points, it is essential to first investigate why these observations poorly fit the model. This examination can reveal data entry errors, measurement anomalies, or the presence of important omitted predictors. Removal should only be considered if the observations are confirmed invalid or erroneous."),
+                
                 br(),
                 br()
               ), # Close Normality tabPanel
@@ -456,12 +461,19 @@ ui <- fluidPage(
                 tags$p("Homoscedasticity is an assumption of the linear regression model that states the variance of the residuals (or errors) should be constant for all levels of the predictor variables. When this assumption is violated, the residual variance differs at various levels of the predictor variables, which is known as heteroscedasticity."),
                 tags$p("If the assumption of homoscedasticity is violated, the model's estimates will remain unbiased, but they will be inefficient (i.e., they will have a larger variance than necessary). Furthermore, the standard errors of the coefficients will be incorrect, leading to unreliable confidence intervals and significance tests, ultimately affecting the validity of any conclusions drawn from the model."),
                 br(),
+                # tags$h4("How to assess the homoscedasticity assumption?"),
+                # tags$p(em("Graphical methods that can be used")),
+                # tags$ol(
+                #   tags$li("A residuals vs. fitted values plot."),
+                #   tags$li("Scale-location plot (also known as spread-location plot). It plots the square root of the absolute standardized residuals against the fitted values.")
+                # ),
                 tags$h4("How to assess the homoscedasticity assumption?"),
-                tags$p(em("Graphical methods that can be used")),
+                tags$p(em("Graphical methods that can be used:")),
                 tags$ol(
-                  tags$li("A residuals vs. fitted values plot."),
-                  tags$li("Scale-location plot (also known as spread-location plot). It plots the square root of the absolute standardized residuals against the fitted values.")
+                  tags$li("Residuals vs. fitted values plot: This plot helps detect unequal variance (heteroscedasticity) by examining whether residuals are randomly scattered around the horizontal line without distinct patterns or trends."),
+                  tags$li("Scale-location plot (also known as spread-location plot): This plot uses the square root of the absolute standardized residuals to emphasize variations in residual spread. It is particularly useful because it stabilizes variance, making it easier to detect subtle heteroscedasticity patterns.")
                 )
+                
                 ),
                 br(),
                 tags$h4("Acceptable appearance of residual plots"),
@@ -690,6 +702,8 @@ server <- function(input, output, session) {
       } else if (input$ext == "dta") {
         # return(read.dta(inFile$datapath))
         return(as.data.frame(read_dta(inFile$datapath)))
+      } else if (input$ext == "rds") {
+        return(as.data.frame(readRDS(inFile$datapath)))
       }
     }
   })
@@ -863,7 +877,13 @@ server <- function(input, output, session) {
       ),
       br(),
       br(),
-      tags$p(strong("Note:"), "If the p-value is less than 0.05 in the test, we reject the null hypotheses.", em("Interpretation:"), "(1) In the Shapiro-Wilk test for normality, the residuals are not normally distributed and (2) in the Breusch-Pagan test for equal variances, the residual do not have constant variance.")
+      # tags$p(strong("Note:"), "If the p-value is less than 0.05 in the test, we reject the null hypotheses.", em("Interpretation:"), "(1) In the Shapiro-Wilk test for normality, the residuals are not normally distributed and (2) in the Breusch-Pagan test for equal variances, the residual do not have constant variance."),
+      tags$p(strong("Note:"), 
+             "If the p-value is less than 0.05, we reject the null hypotheses. ",
+             em("Interpretation:"), 
+             "(1) In the Shapiro-Wilk test, residuals are not normally distributed; however, this test can be overly sensitive, especially with large sample sizes. A statistically significant result does not necessarily imply that the violation is practically relevant or substantially affects model inferences. ",
+             "(2) In the Breusch-Pagan test for equal variances, residuals do not have constant variance.")
+      
     )
   })
 
