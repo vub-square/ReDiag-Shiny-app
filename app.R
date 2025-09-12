@@ -11,6 +11,7 @@ options(shiny.maxRequestSize = 10000 * 1024^2)
 ###############
 # Load packages
 ###############
+source("utils.R")
 library(shiny)
 library(ggplot2)
 library(qqplotr)
@@ -37,13 +38,15 @@ library(shinyFeedback)
 library(shinyAce)
 library(bslib)
 library(shinythemes)
+library(visreg)    
+library(patchwork) 
+library(viridis)
 
 ################################################################################
 # Define UI layout
 ##################
 ui <- fluidPage(
   shinyFeedback::useShinyFeedback(),
-  
   tags$head(
     # Google Analytics tracking code for GA4
     HTML(
@@ -58,11 +61,11 @@ ui <- fluidPage(
         </script>"
     )
   ),
-  
+
   # Open navbarPage for main headings
   navbarPage(
     id = "navbar",
-    #tags$p("ReDiag", style = "color:#003399"),
+    # tags$p("ReDiag", style = "color:#003399"),
     title = "ReDiag",
     theme = shinytheme("flatly"),
     # Open the Home tabPanel
@@ -90,29 +93,22 @@ ui <- fluidPage(
           br(),
           tags$h4("Feedback", style = "color:#003399"),
           tags$p("We would love to hear your thoughts, suggestions, concerns or problems you encountered while using ReDiag so that we can improve. To do this, kindly evaluate the web-application via this", tags$a(href = "https://vub.fra1.qualtrics.com/jfe/form/SV_0lcDxYTeMgcP5oG", "link.")),
+          br(),
+          tags$h4("Citation", style = "color:#003399"),
+          tags$p(
+            "If you use ReDiag for your research, teaching, or presentations, please cite the following publication:"
+          ),
+          tags$blockquote(
+            style = "background:#f6f8fa; border-left:4px solid #FF6600; padding:12px 20px; margin:10px 0 20px 0; font-size:1.05em;",
+            HTML(
+              "Savieri P, Barbé K, Stas L (2025). ReDiag: An Interactive Research Tool to Address Common Misconceptions in Linear Regression Model Diagnostics. <i>Journal of Open Research Software, 13:</i> 14. DOI: <a href='https://doi.org/10.5334/jors.553' target='_blank'>https://doi.org/10.5334/jors.553</a>"
+            )
+          ),
+          br(),
           br(), br(),
-          br(), br(),
-          # tags$h4("Note: This is not the final version of the app. It is still under development!", style = "color:#FF0000"),
-          # br(), br(),
-          # tags$hr(),
-          # tags$h6(em("Copyright 2024, Support for Quantitative and Qualitative Research, Version 20.12.24"), align = "center"),
-          # br()
         ) # End Home mainPanel
         # position = "right"
-      ),
-      absolutePanel(
-        bottom = 10,
-        left = 0,
-        right = 0,
-        height = "auto",
-        fixed = TRUE,
-        tags$div(
-          style = "text-align: left; width: 100%; padding: 10px;",
-          tags$h6(
-            em("2025 Support for Quantitative and Qualitative Research (SQUARE)"),
-          )
-        )
-      )# End Home sidebarLayout
+      ) # End Home sidebarLayout
     ), # Close the Home tabPanel
 
     ############################################################################
@@ -306,7 +302,7 @@ ui <- fluidPage(
                 tags$p("Linearity Assumption", style = "color:#003399"),
                 value = "mpanel3",
                 tags$h3("Linearity and consequences of non-linearity"),
-                checkboxInput("show_LR_info", "Show background information", value = FALSE),
+                checkboxInput("show_LR_info", "Show background information and example plots", value = FALSE),
                 conditionalPanel(
                   condition = "input.show_LR_info == true",
                   tags$p("One of the assumptions of a linear regression model is that the mean of the outcome Y is a linear function of the predictor variable X. In multiple linear regression, the relationship between every predictor variable and the mean of outcome, is assumed to be linear when the other variables are held constant. This implies that the model is linear in the regression parameters/coefficients meaning the conditional mean of the residuals is assumed to be zero for any given combination of values of the predictor variables."),
@@ -324,41 +320,79 @@ ui <- fluidPage(
                       tags$li("A scatter plot of the observed values against the fitted values gives an overview of the marginal relationships between \\(Y\\) and \\(X\\). It is plotted with a loess curve (locally estimated scatter plot smoother) which does not assume the form of the relationship between \\(Y\\) and \\(X\\) (e.g. linear model) but rather produces a smooth line that follows the trend in the data."),
                       tags$li("A plot of the residuals versus the fitted values can be examined to complement the information from the scatter plot.")
                     )
-                  )
+                  ),
+                  br(),
+                  tags$h4("Acceptable appearance of residual plots"),
+                  br(),
+                  fluidRow(
+                    column(1, ),
+                    column(
+                      5, img(src = "ovpsample.png", height = 450, align = "center"),
+                      br(), br(),
+                      tags$p("The scatter plot of the observed values against fitted values measures the accuracy of the fitted model and assesses any strong deviations from the regression line. The linearity assumption is met if the loess curve (red) approximately follows the regression line (blue) and remains in the confidence interval bounds (in grey).")
+                    ),
+                    column(
+                      5, img(src = "rvpsample.png", height = 450, align = "center"),
+                      br(), br(),
+                      tags$p("When the linear regression model is correct, the points should be randomly scattered around the zero-line (the horizontal line where residuals equal zero), with no systematic pattern. This zero-line represents the situation where there is no difference between observed and fitted values of Y. The loess curve should approximately follow the zero-line and a curvature could indicate model misspecification and nonlinearity.")
+                    )
+                  ), # Close fluidRow for ideal appearances
                 ),
                 br(),
-                tags$h4("Acceptable appearance of residual plots"),
                 br(),
-                fluidRow(
-                  column(1, ),
-                  column(
-                    5, img(src = "ovpsample.png", height = 450, align = "center"),
-                    br(), br(),
-                    tags$p("The scatter plot of the observed values against fitted values measures the accuracy of the fitted model and assesses any strong deviations from the regression line. The linearity assumption is met if the loess curve (red) approximately follows the regression line (blue) and remains in the confidence interval bounds (in grey).")
-                  ),
-                  column(
-                    5, img(src = "rvpsample.png", height = 450, align = "center"),
-                    br(), br(),
-                    tags$p("When the linear regression model is correct, the points should be randomly scattered around the zero-line (the horizontal line where residuals equal zero), with no systematic pattern. This zero-line represents the situation where there is no difference between observed and fitted values of Y. The loess curve should approximately follow the zero-line and a curvature could indicate model misspecification and nonlinearity.")
-                  )
-                ), # Close fluidRow for ideal appearances
-                # br(),
                 # h4("Residual plots when non-linearity exists"),
-                br(),
+                # checkboxInput("cb_friendly", "Colour-vision friendly palette", value = TRUE),
                 uiOutput("linearityUI"),
                 br(),
                 tags$h4("Remedies"),
                 tags$p("When non-linearity is detected, it is recommended to use procedures that account for the model misspecification."),
                 br(),
-                tags$p(em("Approach 1: Polynomial regression")),
+                tags$p(em("Approach 1: Transformations of predictors (X)")),
+                tags$p(
+                  "Transforming predictors is useful when residuals indicate nonlinearity with a specific covariate. ",
+                  "These transformations improve model fit by restoring approximate linearity without necessarily altering the distribution of the residuals via the outcome."
+                ),
+                tags$ul(
+                  tags$li(
+                    strong("Log(X)"), ": use when the effect of ", em("X"), " on ", em("Y"),
+                    " diminishes as ", em("X"), " increases (e.g., multiplicative or diminishing-returns patterns)."
+                  ),
+                  tags$li(
+                    strong("Sqrt(X)"), ": helpful for skewed or count-like predictors to soften curvature."
+                  ),
+                  tags$li(
+                    strong("Centering / standardising X"), ": improves interpretability and numerical stability when adding polynomial terms."
+                  )
+                ),
+
+                # --- Interpretation & workflow notes
+                tags$p(
+                  strong("Interpretation note:"),
+                  " coefficients relate to the transformed scale. "),
+                br(),
+                tags$p(em("Approach 2: Polynomial regression")),
                 tags$p("The core principle behind polynomial regression is to use a non-linear function to transform the predictor variable. For example, a simple and commonly used transformation is to square the predictor variable (second-order polynomial) to model a U-shaped relationship."),
                 withMathJax(
                   tags$p("After this adjustment, the fitted model will follow the structure in the data. Therefore, if the relationship between \\(X\\) and mean response of \\(Y\\) is U-shaped (curvelinear), the appropriate model is a quadratic regression model which has a second-order polynomial in X (i.e., \\(\\hat{Y} = β_0+ β_1 X_{i1}+ β_2 X_{i1}^2\\)). In a cubic regression model, a third-order polynomial in X is introduced such that, \\(\\hat{Y} = β_0+ β_1 X_{i1}+ β_2 X_{i1}^2+ β_3 X_{i1}^3\\)."),
-                  tags$p("Variables can be transformed under the", strong("Transform"), "sidebar tab to incorporate such high order terms, and users can then redifine the model in the", strong("Define Model"), "sidebar tab."),
+                  tags$p("Variables can be transformed under the", strong("Transform"), "sidebar tab to incorporate such high order terms, and users can then redifine the model in the", strong("Define Model"), "sidebar tab. Use sparingly to avoid overfit."),
                   tags$p(strong("Note: Polynomial regression models are still linear models because they are linear in their parameters.")),
                   br(),
-                  tags$p(em("Approach 2: Piecewise regression")),
-                  tags$p("This form of regression allows multiple linear models to be fitted to the data for different ranges of \\(X\\). For example, if the data follow different linear trends over various regions of the data. We should model the regression function in “pieces” which can be connected. In this version of ReDiag, we will not be using this approach.")
+                  tags$p(em("Approach 3: Piecewise regression")),
+                  tags$p("This form of regression allows multiple linear models to be fitted to the data for different ranges of \\(X\\) i.e. flexible option for complex but smooth nonlinearity. For example, if the data follow different linear trends over various regions of the data. We should model the regression function in “pieces” which can be connected. In this version of ReDiag, we will not be using this approach.")
+                ),
+                br(),
+                tags$p(em("Approach 4: Addressing omitted variable bias")),
+                tags$p(
+                  "Systematic non-linear patterns in the residual plots may suggest that important predictors are missing from the model. ",
+                  "Omitting relevant variables can bias estimates and lead to apparent non-linearity in the residuals."
+                ),
+                tags$p(
+                  "For example, if the residuals show distinct clusters or trends by subgroups, this could indicate the presence of a discrete variable (e.g., gender, treatment group) ",
+                  "that should be explicitly included in the model."
+                ),
+                tags$p(
+                  "Adding such omitted variables can restore linearity and improve model adequacy. ",
+                  "As with influential observations, careful investigation is needed before adding predictors to ensure they are theoretically justified."
                 ),
                 br(), br()
               ), # Close Linearity tabPanel
@@ -374,7 +408,9 @@ ui <- fluidPage(
                 ),
                 tags$p("Component-plus-residual plots become relevant in checking the linearity assumption in cases where there is more than one predictor variable. These partial residual plots display the residuals of one predictor variable against the outcome variable."),
                 tags$p("The linearity assumption is met when the loess curve (solid puple line) follows the regression line (dashed blue line). Deviations between the loess curve and regression line are indicative of deviations from linearity in the partial relationship between X and Y. Box plots are used for categorical variables instead of scatter plots. This is because the linearity assupmtion is not required for the relationship between a categorical predictor and a continuous outcome."),
+                
                 br(),
+                checkboxInput("cb_friendly", "Colour-vision friendly palette", value = TRUE),
                 fluidRow(
                   # column(1, ),
                   column(12, outputCodeButton(plotOutput("crplot", height = "100%", width = "100%")))
@@ -388,66 +424,108 @@ ui <- fluidPage(
                 tags$p("Normality Assumption", style = "color:#003399"),
                 value = "mpanel5",
                 tags$h3("Normality and consequences of non-normality"),
-                checkboxInput("show_Norm_info", "Show background information", value = FALSE),
+                checkboxInput("show_Norm_info", "Show background information and example plots", value = FALSE),
                 conditionalPanel(
                   condition = "input.show_Norm_info == true",
-                tags$p("Another assumption of a linear regression model is that the residuals are normality distributed. In short, this means the normal density plot should have a single peak (i.e. be unimodal) and be symmetric instead of skewed. Note that the outcome Y is not required to be normally distributed because normality in Y does not guarantee normality in residuals. It is the outcome, controlling for the predictor variables, that needs to fulfill the requirement of normality. However, the outcome has to be continuous (not discrete) for us to assess this assumption."),
-                tags$p("When the errors are non-normally distributed, the least-squares estimator has a large sampling variance (inefficient) and this distorts the interpretation of the model. This is because the conditional mean of Y given the X's, is a sensitive measure in skewed distributions."),
-                br(),
-                tags$h4("How to assess the normality assumption?"),
-                tags$p(em("Graphical methods that can be used")),
-                tags$ol(
-                  tags$li("A plot of the theoretical quantiles versus sample quantiles (QQ-plot) can be used to compare observed values to a theoretical distribution. The ordered quantiles of the observed residuals are plotted against the quantiles of the standard normal distribution."),
-                  tags$li("A histogram of the residuals can also be used to visualise the distribution, but caution needs to be taken in small sample sizes as the plot may be inconclusive.")
-                )
-                ),
-                br(),
-                tags$h4("Acceptable appearance of residual plots"),
-                br(),
-                fluidRow(
-                  column(1, ),
-                  column(
-                    5, img(src = "qqsample.png", height = 450, align = "center"),
-                    br(), br(),
-                    tags$p("The ordered residuals are plotted against theoretical expected values for a standard normal sample. To meet the normality assumption, the residuals should follow the diagonal straight-line (which represents the normal distribution) without devaiting from the confidence interval bound (grey).")
+                  tags$p("Another assumption of a linear regression model is that the residuals are normality distributed. In short, this means the normal density plot should have a single peak (i.e. be unimodal) and be symmetric instead of skewed. Note that the outcome Y is not required to be normally distributed because normality in Y does not guarantee normality in residuals. It is the outcome, controlling for the predictor variables, that needs to fulfill the requirement of normality. However, the outcome has to be continuous (not discrete) for us to assess this assumption."),
+                  tags$p("When the errors are non-normally distributed, the least-squares estimator has a large sampling variance (inefficient) and this distorts the interpretation of the model. This is because the conditional mean of Y given the X's, is a sensitive measure in skewed distributions."),
+                  br(),
+                  tags$h4("How to assess the normality assumption?"),
+                  tags$p(em("Graphical methods that can be used")),
+                  tags$ol(
+                    tags$li("A plot of the theoretical quantiles versus sample quantiles (QQ-plot) can be used to compare observed values to a theoretical distribution. The ordered quantiles of the observed residuals are plotted against the quantiles of the standard normal distribution."),
+                    tags$li("A histogram of the residuals can also be used to visualise the distribution, but caution needs to be taken in small sample sizes as the plot may be inconclusive.")
                   ),
-                  column(
-                    5, img(src = "histsample.png", height = 450, align = "center"),
-                    br(), br(),
-                    tags$p("To provide a decent indicator of normality of the residuals, the histogram should have some symmetry and a bell-shape. The main objective is to avoid seeing histograms that are very irregularly shaped (e.g., heavily skewed).")
+                  br(),
+                  tags$h4("Acceptable appearance of residual plots"),
+                  br(),
+                  fluidRow(
+                    column(1, ),
+                    column(
+                      5, img(src = "qqsample.png", height = 450, align = "center"),
+                      br(), br(),
+                      tags$p("The ordered residuals are plotted against theoretical expected values for a standard normal sample. To meet the normality assumption, the residuals should follow the diagonal straight-line (which represents the normal distribution) without devaiting from the confidence interval bound (grey).")
+                    ),
+                    column(
+                      5, img(src = "histsample.png", height = 450, align = "center"),
+                      br(), br(),
+                      tags$p("To provide a decent indicator of normality of the residuals, the histogram should have some symmetry and a bell-shape. The main objective is to avoid seeing histograms that are very irregularly shaped (e.g., heavily skewed).")
+                    )
                   )
                 ),
                 # br(),
+                
                 br(),
                 uiOutput("normalityUI"),
                 br(),
                 br(),
                 tags$h4("Remedies"),
                 tags$p(em("Approach 1: Transformations")),
-                tags$p("Data transformation is one strategy to solve the problem of non-normality. It involves adapting the data to the model by altering the outcome or predictor variable’s distribution. We perform data transformations for three main reasons:"),
+                tags$p(
+                  "Data transformation is one strategy to address non-normality, heteroscedasticity, or nonlinearity. ",
+                  "It involves adapting the data to the model by altering either the outcome (Y) or one or more predictors (X). ",
+                  "We perform transformations for three main reasons:"
+                ),
                 tags$ol(
                   tags$li("normalise the residuals"),
                   tags$li("stabilise variance of the outcome"),
                   tags$li("linearise the regression model")
                 ),
-                tags$p("A well-chosen transformation can help satisfy these concerns; in some instances, the same transformation often helps accomplish the first two goals. Interpretation of the model depends on the transformed variable (s). In practice, the commonly used transformations on the outcome are:"),
-                tags$ol(
-                  tags$li("The log transformation: (a) to stabilise the variance if it increases markedly with increasing Y; (b) to normalise a positively skewed distribution of the residuals; and (c) to linearise the regression model if the relationship of Y to some predictor variable suggests a model with consistently increasing slope (e.g., an exponential relationship)."),
-                  tags$li("The square transformation: (a) to stabilise the variance if it decreases with the mean of Y; (b) to normalise a negatively skewed distribution of the residuals; and (c) to linearise the model if the original relationship with some predictor variable is curvilinear downward (i.e. if the slope consistently decreases as the predictor variable increases)."),
-                  tags$li("The square root transformation: (a) stabilises the variance if it is proportional to the mean of Y. This is particularly appropriate if the dependent variable has the Poisson distribution (i.e., count data).")
+
+                # --- When to transform Y vs X (new, concise decision cues)
+                tags$p(strong("When should I transform Y vs X?")),
+                tags$ul(
+                  tags$li(strong("Transform Y"), " when residuals are skewed and/or the variance of ", em("Y"), " changes with its mean (heteroscedasticity)."),
+                  tags$li(strong("Transform X"), " when the relationship between a predictor and ", em("Y"), " is clearly non-linear (curved pattern in residuals or component+residual plots).")
                 ),
-                tags$p("Another common approach is to use Box-Cox transformations, a family of power transformations. The procedure uses the maximum likelihood method to find the optimal power transformation for some variables. More information on these transformations can be found in the", strong("Manual"), "tab."),
+
+                # --- Outcome (Y) transformations (kept, lightly polished)
+                tags$p(
+                  "A well-chosen transformation can help satisfy the above concerns; in some instances, the same transformation addresses both normality and variance. ",
+                  "Interpretation of the model depends on the transformed variable(s). Common transformations of the outcome include:"
+                ),
+                tags$ol(
+                  tags$li(
+                    strong("Log(Y)"), ": ",
+                    "(a) stabilises variance when it increases with ", em("Y"), "; ",
+                    "(b) normalises positively skewed residuals; ",
+                    "(c) linearises approximately exponential relationships."
+                  ),
+                  tags$li(
+                    strong("Square(Y)"), ": ",
+                    "(a) stabilises variance when it decreases with the mean of ", em("Y"), "; ",
+                    "(b) normalises negatively skewed residuals; ",
+                    "(c) linearises downward-curving relationships."
+                  ),
+                  tags$li(
+                    strong("Sqrt(Y)"), ": ",
+                    "(a) stabilises variance proportional to the mean; ",
+                    "often suitable for count-like outcomes (approx. Poisson)."
+                  )
+                ),
+
+                # --- Box–Cox (kept)
+                tags$p(
+                  "Another common approach is the ", strong("Box–Cox"), " family of power transformations for the outcome. ",
+                  "The procedure uses maximum likelihood to find the optimal power. ",
+                  "More information is provided in the ", strong("Manual"), " tab."
+                ),
+                tags$p(
+                  strong("Interpretation note:"), 
+                  " While some researchers prefer to back-transform estimates to the original scale, ",
+                  "this is not always appropriate. If the chosen transformation is not monotonic, ",
+                  "back-transformation can distort effect sizes and complicate interpretation. ",
+                  "In such cases, results should be interpreted on the transformed scale using partial orders ",
+                  "or relative comparisons. The Box–Cox transformations implemented here are monotonic, ",
+                  "so interpretation remains coherent between the transformed and original scales."
+                ),
                 br(),
                 tags$p(em("Approach 2: Generalized linear models")),
                 tags$p("When the model assumptions are violated even after applying transformations, this implies a multiple linear regression model poorly describes the data. The solution is to adapt the regression model to the data and model the non-normality. The generalised linear model is a generalisation of the basic regression model that makes it possible to relax the normality assumption and assume other error distributions instead. Logistic regression (binomial and multinomial data) and Poisson regression (count data) are good options."),
                 br(),
-                # tags$p(em("Approach 3: Addition of omitted discrete variables and deletion of outliers")),
-                # tags$p("A multimodal (i.e. more than one peak) error distribution implies that the model omitted one or more discrete predictor variables that naturally divide the data into groups. Adding these variables can help normalise the distribution of the residuals."),
-                # tags$p("Checking for outliers using Cook’s Distance (an estimate of the influence of a data point) and deleting them can help normalise the distribution of the residuals and stabilise their variance."),
                 tags$p(em("Approach 3: Addition of omitted discrete variables and handling of influential observations")),
                 tags$p("A multimodal (i.e., more than one peak) error distribution implies that the model omitted one or more discrete predictor variables that naturally divide the data into groups. Adding these variables can help normalise the distribution of the residuals."),
                 tags$p("Cook’s Distance can identify influential observations that may disproportionately affect the model. Rather than simply deleting these points, it is essential to first investigate why these observations poorly fit the model. This examination can reveal data entry errors, measurement anomalies, or the presence of important omitted predictors. Removal should only be considered if the observations are confirmed invalid or erroneous."),
-                
                 br(),
                 br()
               ), # Close Normality tabPanel
@@ -455,40 +533,33 @@ ui <- fluidPage(
                 tags$p("Homoscedasticity Assumption", style = "color:#003399"),
                 value = "mpanel5",
                 tags$h3("Homoscedasticity and consequences of heteroscedasticity"),
-                checkboxInput("show_HS_info", "Show background information", value = FALSE),
+                checkboxInput("show_HS_info", "Show background information and example plots", value = FALSE),
                 conditionalPanel(
                   condition = "input.show_HS_info == true",
-                tags$p("Homoscedasticity is an assumption of the linear regression model that states the variance of the residuals (or errors) should be constant for all levels of the predictor variables. When this assumption is violated, the residual variance differs at various levels of the predictor variables, which is known as heteroscedasticity."),
-                tags$p("If the assumption of homoscedasticity is violated, the model's estimates will remain unbiased, but they will be inefficient (i.e., they will have a larger variance than necessary). Furthermore, the standard errors of the coefficients will be incorrect, leading to unreliable confidence intervals and significance tests, ultimately affecting the validity of any conclusions drawn from the model."),
-                br(),
-                # tags$h4("How to assess the homoscedasticity assumption?"),
-                # tags$p(em("Graphical methods that can be used")),
-                # tags$ol(
-                #   tags$li("A residuals vs. fitted values plot."),
-                #   tags$li("Scale-location plot (also known as spread-location plot). It plots the square root of the absolute standardized residuals against the fitted values.")
-                # ),
-                tags$h4("How to assess the homoscedasticity assumption?"),
-                tags$p(em("Graphical methods that can be used:")),
-                tags$ol(
-                  tags$li("Residuals vs. fitted values plot: This plot helps detect unequal variance (heteroscedasticity) by examining whether residuals are randomly scattered around the horizontal line without distinct patterns or trends."),
-                  tags$li("Scale-location plot (also known as spread-location plot): This plot uses the square root of the absolute standardized residuals to emphasize variations in residual spread. It is particularly useful because it stabilizes variance, making it easier to detect subtle heteroscedasticity patterns.")
-                )
-                
-                ),
-                br(),
-                tags$h4("Acceptable appearance of residual plots"),
-                br(),
-                fluidRow(
-                  column(1, ),
-                  column(
-                    5, img(src = "rvpsample.png", height = 450, align = "center"),
-                    br(), br(),
-                    tags$p("In a residuals vs. fitted values plot, homoscedasticity is evident if the residuals are randomly scattered around the horizontal line at zero without any systematic pattern. If the spread of residuals increases or decreases across levels of fitted values, this suggests heteroscedasticity.")
+                  tags$p("Homoscedasticity is an assumption of the linear regression model that states the variance of the residuals (or errors) should be constant for all levels of the predictor variables. When this assumption is violated, the residual variance differs at various levels of the predictor variables, which is known as heteroscedasticity."),
+                  tags$p("If the assumption of homoscedasticity is violated, the model's estimates will remain unbiased, but they will be inefficient (i.e., they will have a larger variance than necessary). Furthermore, the standard errors of the coefficients will be incorrect, leading to unreliable confidence intervals and significance tests, ultimately affecting the validity of any conclusions drawn from the model."),
+                  br(),
+                  tags$h4("How to assess the homoscedasticity assumption?"),
+                  tags$p(em("Graphical methods that can be used:")),
+                  tags$ol(
+                    tags$li("Residuals vs. fitted values plot: This plot helps detect unequal variance (heteroscedasticity) by examining whether residuals are randomly scattered around the horizontal line without distinct patterns or trends."),
+                    tags$li("Scale-location plot (also known as spread-location plot): This plot uses the square root of the absolute standardized residuals to emphasize variations in residual spread. It is particularly useful because it stabilizes variance, making it easier to detect subtle heteroscedasticity patterns.")
                   ),
-                  column(
-                    5, img(src = "scalesample.png", height = 450, align = "center"),
-                    br(), br(),
-                    tags$p("In a scale-location plot, the homoscedasticity assumption holds if the points are scattered randomly around a horizontal line. If the points exhibit a pattern or trend (such as a funnel shape), heteroscedasticity is likely present.")
+                  br(),
+                  tags$h4("Acceptable appearance of residual plots"),
+                  br(),
+                  fluidRow(
+                    column(1, ),
+                    column(
+                      5, img(src = "rvpsample.png", height = 450, align = "center"),
+                      br(), br(),
+                      tags$p("In a residuals vs. fitted values plot, homoscedasticity is evident if the residuals are randomly scattered around the horizontal line at zero without any systematic pattern. If the spread of residuals increases or decreases across levels of fitted values, this suggests heteroscedasticity.")
+                    ),
+                    column(
+                      5, img(src = "scalesample.png", height = 450, align = "center"),
+                      br(), br(),
+                      tags$p("In a scale-location plot, the homoscedasticity assumption holds if the points are scattered randomly around a horizontal line. If the points exhibit a pattern or trend (such as a funnel shape), heteroscedasticity is likely present.")
+                    )
                   )
                 ),
                 br(),
@@ -561,7 +632,7 @@ ui <- fluidPage(
         tags$p("The", strong("Define Model"), "sidebar tab allows users to select the outcome variable and one or more predictor variables. If the model contains interaction terms, one can create and add them to the model by marking the checkbox. The model is then run by clicking the ", em("Run Analysis"), "button and viewing the fitted regression model results under the ", strong("Model Summary"), "tab."),
         br(),
         tags$h4("Step 3: Model diagnostics"),
-        tags$p("The", strong("Linearity Assumption"),",", strong("Normality Assumption"), "and", strong("Homoscedasticity Assumption"), "tabs provide visualisations and diagnostics plots to validate the regression model."),
+        tags$p("The", strong("Linearity Assumption"), ",", strong("Normality Assumption"), "and", strong("Homoscedasticity Assumption"), "tabs provide visualisations and diagnostics plots to validate the regression model."),
         tags$ol(
           tags$li("The", em("'observed vs fitted values'"), "scatter plot and the", em("'residuals vs fitted values'"), "plot assess the linearity assumption. Both illustrate the relationship between the outcome and the predictors."),
           tags$li("The QQ-plot and the histogram of residuals provide visualisations to assess the normality assumption."),
@@ -638,6 +709,19 @@ ui <- fluidPage(
             h5("dr. Lara Stas & Prof. dr. Kurt Barbe", style = "text-align: center;")
             # Kurt Barb\xe9
           )
+        ),
+        absolutePanel(
+          bottom = 10,
+          left = 0,
+          right = 0,
+          height = "auto",
+          fixed = TRUE,
+          tags$div(
+            style = "text-align: center; width: 100%; padding: 10px;",
+            tags$h6(
+              em("2025 Support for Quantitative and Qualitative Research (SQUARE)"),
+            )
+          )
         )
       )
     ),
@@ -652,19 +736,6 @@ ui <- fluidPage(
 load("occupancy.RData")
 load("labdata_aged.RData")
 load("boxcox.RData")
-
-input2txt <- function(x) {
-  if (!is.null(x$added)) {
-    res <- sprintf("Outcome variable: %s
-Predictor variable(s): %s", x$outcome, paste0((paste(x$predictor, collapse = " + ")), " + ", (paste(x$added, collapse = " + "))))
-    return(res)
-  } else {
-    res1 <- sprintf("Outcome variable: %s
-Predictor variable(s): %s", x$outcome, paste(x$predictor, collapse = " + "))
-    return(res1)
-  }
-}
-
 
 ################################################################################
 # Open server
@@ -830,6 +901,7 @@ server <- function(input, output, session) {
     req(dataset())
     tagList(
       tags$h4("Using your own data: Residual plots from your model"),
+      checkboxInput("cb_friendly", "Colour-vision friendly palette", value = TRUE),
       fluidRow(
         column(1, ),
         column(
@@ -850,6 +922,7 @@ server <- function(input, output, session) {
     req(dataset())
     tagList(
       tags$h4("Using your own data: Residual plots from your model"),
+      checkboxInput("cb_friendly", "Colour-vision friendly palette", value = TRUE),
       fluidRow(
         column(1, ),
         column(
@@ -878,12 +951,13 @@ server <- function(input, output, session) {
       br(),
       br(),
       # tags$p(strong("Note:"), "If the p-value is less than 0.05 in the test, we reject the null hypotheses.", em("Interpretation:"), "(1) In the Shapiro-Wilk test for normality, the residuals are not normally distributed and (2) in the Breusch-Pagan test for equal variances, the residual do not have constant variance."),
-      tags$p(strong("Note:"), 
-             "If the p-value is less than 0.05, we reject the null hypotheses. ",
-             em("Interpretation:"), 
-             "(1) In the Shapiro-Wilk test, residuals are not normally distributed; however, this test can be overly sensitive, especially with large sample sizes. A statistically significant result does not necessarily imply that the violation is practically relevant or substantially affects model inferences. ",
-             "(2) In the Breusch-Pagan test for equal variances, residuals do not have constant variance.")
-      
+      tags$p(
+        strong("Note:"),
+        "If the p-value is less than 0.05, we reject the null hypotheses. ",
+        em("Interpretation:"),
+        "(1) In the Shapiro-Wilk test, residuals are not normally distributed; however, this test can be overly sensitive, especially with large sample sizes. A statistically significant result does not necessarily imply that the violation is practically relevant or substantially affects model inferences. ",
+        "(2) In the Breusch-Pagan test for equal variances, residuals do not have constant variance."
+      )
     )
   })
 
@@ -891,16 +965,17 @@ server <- function(input, output, session) {
     req(dataset())
     tagList(
       tags$h4("Using your own data: Residual plots from your model"),
+      checkboxInput("cb_friendly", "Colour-vision friendly palette", value = TRUE),
       fluidRow(
         column(1, ),
         column(
-          5, #plotOutput("rvpplot")
+          5, # plotOutput("rvpplot")
           outputCodeButton(plotOutput("rvpplot")),
           tags$p("1. Plot of residuals against fitted values of the outcome with the zero-line (blue) and the loess curve (red).", align = "center"),
           downloadButton("dnldrvp", label = "")
         ),
         column(
-          5, #plotOutput("scalelocplot")
+          5, # plotOutput("scalelocplot")
           outputCodeButton(plotOutput("scalelocplot")),
           tags$p("2. Scatter plot between the observed and fitted values of the outcome with the linear regression line (blue) and the loess curve (red).", align = "center"),
           downloadButton("dnldscl", label = "")
@@ -1079,183 +1154,413 @@ server <- function(input, output, session) {
 
   # Inner Tab 4: Model Diagnostics ---------------------------------------------
   # Observed vs fitted values
+  # ovf_plot <- metaReactive2({
+  #   validate(need(dataset()[[input$outcome]], "Please, fit model or update observed values with tranformed data."))
+  #   metaExpr({
+  #     ggplot(dataset(), aes(predict(..(regModel())), dataset()[[..(input$outcome)]])) +
+  #       geom_point() +
+  #       stat_smooth(method = "lm", formula = y ~ x) +
+  #       stat_smooth(method = "loess", formula = y ~ x, se = F, col = "red") +
+  #       xlab(paste("Fitted values for", ..(input$outcome))) +
+  #       ylab(paste("Observed values for", ..(input$outcome))) +
+  #       theme_bw()
+  #   })
+  # })
+  # 
+  # output$ovfplot <- metaRender(renderPlot,
+  #   {
+  #     ..(ovf_plot())
+  #   },
+  #   res = 96
+  # )
+  # 
+  # observeEvent(input$ovfplot_output_code, {
+  #   code <- expandChain(quote(library(ggplot2)), output$ovfplot())
+  #   displayCodeModal(code)
+  # })
+
+  # Observed vs fitted values (ggplot, color-vision friendly)
   ovf_plot <- metaReactive2({
-    validate(need(dataset()[[input$outcome]], "Please, fit model or update observed values with tranformed data."))
+    validate(need(dataset()[[input$outcome]],
+                  "Please, fit model or update observed values with transformed data."))
+    
+    cb_on <- isTRUE(input$cb_friendly)  # capture toggle
+    
     metaExpr({
-      ggplot(dataset(), aes(predict(..(regModel())), dataset()[[..(input$outcome)]])) +
-        geom_point() +
-        stat_smooth(method = "lm", formula = y ~ x) +
-        stat_smooth(method = "loess", formula = y ~ x, se = F, col = "red") +
-        xlab(paste("Fitted values for", ..(input$outcome))) +
-        ylab(paste("Observed values for", ..(input$outcome))) +
-        theme_bw()
+      df <- dataset()
+      df$.fitted   <- predict(..(regModel()))
+      df$.observed <- df[[..(input$outcome)]]
+      
+      p <- ggplot(df, aes(x = .fitted, y = .observed)) +
+        geom_point(alpha = 0.6) +
+        # map labels to aesthetics (no hard-coded colours)
+        geom_smooth(method = "lm",    formula = y ~ x, se = TRUE,
+                    aes(color = "Linear fit", linetype = "Linear fit")) +
+        geom_smooth(method = "loess", formula = y ~ x, se = FALSE,
+                    aes(color = "LOESS",     linetype = "LOESS")) +
+        labs(
+          x = paste("Fitted values for", ..(input$outcome)),
+          y = paste("Observed values for", ..(input$outcome)),
+          color = NULL, linetype = NULL
+        ) +
+        ..(theme_consistent)()
+      
+      # apply viridis scales when the toggle is ON
+      p <- ..(cb_apply)(p, discrete = TRUE, enabled = ..(cb_on))
+      p
     })
   })
-
-  output$ovfplot <- metaRender(renderPlot,
-    {
-      ..(ovf_plot())
-    },
-    res = 96
-  )
-
+  
+  output$ovfplot <- metaRender(renderPlot, { ..(ovf_plot()) }, res = 96)
+  
   observeEvent(input$ovfplot_output_code, {
     code <- expandChain(quote(library(ggplot2)), output$ovfplot())
     displayCodeModal(code)
   })
-
+  
   # Residuals vs fitted values
-  rvf_plot <- metaReactive({
-    ..(regModel()) %>%
-      ggplot(aes(.fitted, .resid)) +
-      geom_point() +
-      stat_smooth(method = "loess", formula = y ~ x, col = "red") +
-      geom_hline(yintercept = 0, col = "blue", linetype = "dashed") +
-      # ggtitle("Residual vs Fitted Plot") +
-      xlab(paste("Fitted values for", ..(input$outcome))) +
-      ylab("Residuals") +
-      theme_bw()
+  # rvf_plot <- metaReactive({
+  #   ..(regModel()) %>%
+  #     ggplot(aes(.fitted, .resid)) +
+  #     geom_point() +
+  #     stat_smooth(method = "loess", formula = y ~ x, col = "red") +
+  #     geom_hline(yintercept = 0, col = "blue", linetype = "dashed") +
+  #     # ggtitle("Residual vs Fitted Plot") +
+  #     xlab(paste("Fitted values for", ..(input$outcome))) +
+  #     ylab("Residuals") +
+  #     theme_bw()
+  # })
+  # 
+  # output$rvfplot <- metaRender(renderPlot,
+  #   {
+  #     # req(input$predictor)
+  #     
+  #     cb_apply(..(rvf_plot()), discrete = TRUE, enabled = )
+  #   },
+  #   res = 96
+  # )
+  # 
+  # observeEvent(input$rvfplot_output_code, {
+  #   code <- expandChain(quote(library(dplyr)), quote(library(ggplot2)), output$rvfplot())
+  #   displayCodeModal(code)
+  # })
+
+  # Residuals vs fitted values (ggplot, color-vision friendly)
+  rvf_plot <- metaReactive2({
+    cb_on <- isTRUE(input$cb_friendly)
+    
+    metaExpr({
+      # fortify.lm gives .fitted and .resid for ggplot
+      df <- ggplot2::fortify(..(regModel()))
+      zline <- data.frame(y = 0)
+      
+      p <- ggplot(df, aes(x = .fitted, y = .resid)) +
+        geom_point(alpha = 0.6) +
+        geom_smooth(method = "loess", formula = y ~ x, se = FALSE,
+                    aes(color = "LOESS", linetype = "LOESS")) +
+        # map the zero line to colour/linetype so palette + legend handle it
+        geom_hline(data = zline, aes(yintercept = y,
+                                     color = "Zero line",
+                                     linetype = "Zero line")) +
+        labs(
+          x = paste("Fitted values for", ..(input$outcome)),
+          y = "Residuals",
+          color = NULL, linetype = NULL
+        ) +
+        ..(theme_consistent)()
+      
+      p <- ..(cb_apply)(p, discrete = TRUE, enabled = ..(cb_on))
+      p
+    })
   })
-
-  output$rvfplot <- metaRender(renderPlot,
-    {
-      # req(input$predictor)
-      ..(rvf_plot())
-    },
-    res = 96
-  )
-
+  
+  output$rvfplot <- metaRender(renderPlot, { ..(rvf_plot()) }, res = 96)
+  
   observeEvent(input$rvfplot_output_code, {
-    code <- expandChain(quote(library(dplyr)), quote(library(ggplot2)), output$rvfplot())
+    code <- expandChain(quote(library(ggplot2)), output$rvfplot())
     displayCodeModal(code)
   })
-
+  
   # crPlots for multpiple linear regression
-  output$crplot <- metaRender2(renderPlot,
-    {
-      ind.vars <- c(input$predictor)
-      validate(
-        need(length(ind.vars) > 1, "Partial residual plots are only displayed for multiple linear regression."),
-        need(is.null(input$added), "C+R plots not available for models with interactions.")
-      )
-      metaExpr({
-        crPlots(..(regModel()), main = "")
+  # output$crplot <- metaRender2(renderPlot,
+  #   {
+  #     ind.vars <- c(input$predictor)
+  #     validate(
+  #       need(length(ind.vars) > 1, "Partial residual plots are only displayed for multiple linear regression."),
+  #       need(is.null(input$added), "C+R plots not available for models with interactions.")
+  #     )
+  #     metaExpr({
+  #       crPlots(..(regModel()), main = "")
+  #     })
+  #   },
+  #   res = 96,
+  #   width = 1000,
+  #   height = 750
+  # )
+  # 
+  # observeEvent(input$crplot_output_code, {
+  #   code <- expandChain(quote(library(ggplot2)), quote(library(car)), output$crplot())
+  #   displayCodeModal(code)
+  # })
+
+  # Partial residual plots for multiple linear regression (ggplot-based)
+  # Build the meta expression exactly as before
+  cr_plot <- metaReactive2({
+    ind.vars <- c(input$predictor)
+    cb_on <- isTRUE(input$cb_friendly)   # keep dependency on the toggle
+    
+    metaExpr({
+      plots <- lapply(..(ind.vars), function(v) {
+        ..(pr_plot)(..(regModel()), v, palette_on = ..(cb_on))
       })
-    },
-    res = 96,
-    width = 1000,
-    height = 750
-  )
-
+      patchwork::wrap_plots(plots, ncol = min(length(plots), 2))
+    })
+  })
+  
+  # Render: validate HERE so nothing is printed on failure
+  output$crplot <- metaRender(renderPlot, {
+    validate(
+      need(length(input$predictor) > 1,
+           "Partial residual plots are only displayed for multiple linear regression."),
+      need(is.null(input$added),
+           "Partial residual plots are not shown when interaction terms are included.")
+    )
+    print(..(cr_plot()))
+  }, res = 96, width = 1000, height = 750)
+  
   observeEvent(input$crplot_output_code, {
-    code <- expandChain(quote(library(ggplot2)), quote(library(car)), output$crplot())
+    code <- expandChain(
+      quote(library(ggplot2)),
+      quote(library(patchwork)),
+      cr_plot()   # export the meta expression, not output$crplot()
+    )
     displayCodeModal(code)
   })
-
+  
   # Normal QQ plot
-  qq_plot <- metaReactive({
-    ..(regModel()) %>%
-      ggplot(aes(sample = .resid)) +
-      stat_qq_line() +
-      stat_qq_band() +
-      stat_qq_point() +
-      # ggtitle("Normal Q-Q Plot") +
-      xlab("Theoretical Quantiles") +
-      ylab("Sample Quantiles") +
-      theme_bw()
+  # qq_plot <- metaReactive({
+  #   ..(regModel()) %>%
+  #     ggplot(aes(sample = .resid)) +
+  #     stat_qq_line() +
+  #     stat_qq_band() +
+  #     stat_qq_point() +
+  #     # ggtitle("Normal Q-Q Plot") +
+  #     xlab("Theoretical Quantiles") +
+  #     ylab("Sample Quantiles") +
+  #     theme_bw()
+  # })
+  # 
+  # output$qqplot <- metaRender(renderPlot,
+  #   {
+  #     # req(input$predictor)
+  #     ..(qq_plot())
+  #   },
+  #   res = 96
+  # )
+  # 
+  # observeEvent(input$qqplot_output_code, {
+  #   code <- expandChain(quote(library(dplyr)), quote(library(ggplot2)), output$qqplot())
+  #   displayCodeModal(code)
+  # })
+
+  # Color-vision friendly Q–Q plot
+  qq_plot <- metaReactive2({
+    cb_on <- isTRUE(input$cb_friendly)
+    
+    metaExpr({
+      df <- ggplot2::fortify(..(regModel()))
+      p <- ggplot(df, aes(sample = .resid)) +
+        # Map to aesthetics (no hard-coded colours)
+        stat_qq_band(aes(fill  = "Q–Q band"), alpha = 0.25) +
+        stat_qq_line(aes(color = "Theoretical line", linetype = "Theoretical line")) +
+        stat_qq_point(aes(color = "Points")) +
+        labs(
+          x = "Theoretical quantiles",
+          y = "Sample quantiles",
+          color = NULL, fill = NULL, linetype = NULL
+        ) +
+        ..(theme_consistent)()
+      
+      # add color-vision friendly scales (affects both color and fill)
+      p <- ..(cb_apply)(p, discrete = TRUE, enabled = ..(cb_on))
+      p
+    })
   })
-
-  output$qqplot <- metaRender(renderPlot,
-    {
-      # req(input$predictor)
-      ..(qq_plot())
-    },
-    res = 96
-  )
-
+  
+  output$qqplot <- metaRender(renderPlot, { ..(qq_plot()) }, res = 96)
+  
   observeEvent(input$qqplot_output_code, {
-    code <- expandChain(quote(library(dplyr)), quote(library(ggplot2)), output$qqplot())
+    code <- expandChain(quote(library(ggplot2)), quote(library(qqplotr)), output$qqplot())
     displayCodeModal(code)
   })
-
+  
   # Histogram of residuals
-  hist_plot <- metaReactive({
-    ..(regModel()) %>%
-      ggplot(aes(.resid)) +
-      geom_histogram(bins = 10, aes(y = after_stat(density)), color = "steelblue4", fill = "grey80") +
-      geom_density(kernel = "gaussian") +
-      # ggtitle("Histogram of Residuals") +
-      xlab("Residuals") +
-      ylab("Density") +
-      theme_bw()
+  # hist_plot <- metaReactive({
+  #   ..(regModel()) %>%
+  #     ggplot(aes(.resid)) +
+  #     geom_histogram(bins = 10, aes(y = after_stat(density)), color = "steelblue4", fill = "grey80") +
+  #     geom_density(kernel = "gaussian") +
+  #     # ggtitle("Histogram of Residuals") +
+  #     xlab("Residuals") +
+  #     ylab("Density") +
+  #     theme_bw()
+  # })
+  # 
+  # output$histplot <- metaRender(renderPlot,
+  #   {
+  #     # req(input$predictor)
+  #     ..(hist_plot())
+  #   },
+  #   res = 96
+  # )
+  # 
+  # observeEvent(input$histplot_output_code, {
+  #   code <- expandChain(quote(library(dplyr)), quote(library(ggplot2)), output$histplot())
+  #   displayCodeModal(code)
+  # })
+
+  # Color-vision friendly residual histogram + density
+  hist_plot <- metaReactive2({
+    cb_on <- isTRUE(input$cb_friendly)
+    
+    metaExpr({
+      df <- ggplot2::fortify(..(regModel()))
+      p <- ggplot(df, aes(x = .resid)) +
+        geom_histogram(bins = 10, aes(y = after_stat(density), fill = "Histogram"),
+                       color = "white") +
+        geom_density(aes(color = "Kernel density", linetype = "Kernel density"), linewidth = 0.9) +
+        labs(x = "Residuals", y = "Density", color = NULL, fill = NULL, linetype = NULL) +
+        ..(theme_consistent)()
+      
+      p <- ..(cb_apply)(p, discrete = TRUE, enabled = ..(cb_on))
+      p
+    })
   })
-
-  output$histplot <- metaRender(renderPlot,
-    {
-      # req(input$predictor)
-      ..(hist_plot())
-    },
-    res = 96
-  )
-
+  
+  output$histplot <- metaRender(renderPlot, { ..(hist_plot()) }, res = 96)
+  
   observeEvent(input$histplot_output_code, {
-    code <- expandChain(quote(library(dplyr)), quote(library(ggplot2)), output$histplot())
+    code <- expandChain(quote(library(ggplot2)), output$histplot())
     displayCodeModal(code)
   })
-
+  
   # Residuals vs fitted values
-  rvp_plot <- metaReactive({
-    ..(regModel()) %>%
-      ggplot(aes(.fitted, .resid)) +
-      geom_point() +
-      stat_smooth(method = "loess", formula = y ~ x, col = "red") +
-      geom_hline(yintercept = 0, col = "blue", linetype = "dashed") +
-      # ggtitle("Residual vs Fitted Plot") +
-      xlab(paste("Fitted values for", ..(input$outcome))) +
-      ylab("Residuals") +
-      theme_bw()
+  # rvp_plot <- metaReactive({
+  #   ..(regModel()) %>%
+  #     ggplot(aes(.fitted, .resid)) +
+  #     geom_point() +
+  #     stat_smooth(method = "loess", formula = y ~ x, col = "red") +
+  #     geom_hline(yintercept = 0, col = "blue", linetype = "dashed") +
+  #     # ggtitle("Residual vs Fitted Plot") +
+  #     xlab(paste("Fitted values for", ..(input$outcome))) +
+  #     ylab("Residuals") +
+  #     theme_bw()
+  # })
+  # 
+  # output$rvpplot <- metaRender(renderPlot,
+  #   {
+  #     # req(input$predictor)
+  #     ..(rvp_plot())
+  #   },
+  #   res = 96
+  # )
+  # 
+  # observeEvent(input$rvpplot_output_code, {
+  #   code <- expandChain(quote(library(dplyr)), quote(library(ggplot2)), output$rvpplot())
+  #   displayCodeModal(code)
+  # })
+
+  # Residuals vs fitted (variant 1)
+  rvp_plot <- metaReactive2({
+    cb_on <- isTRUE(input$cb_friendly)
+    
+    metaExpr({
+      df <- ggplot2::fortify(..(regModel()))
+      zline <- data.frame(y = 0)
+      p <- ggplot(df, aes(x = .fitted, y = .resid)) +
+        geom_point(alpha = 0.6) +
+        geom_smooth(method = "loess", formula = y ~ x, se = FALSE,
+                    aes(color = "LOESS", linetype = "LOESS")) +
+        geom_hline(data = zline, aes(yintercept = y, color = "Zero line", linetype = "Zero line")) +
+        labs(
+          x = paste("Fitted values for", ..(input$outcome)),
+          y = "Residuals",
+          color = NULL, linetype = NULL
+        ) +
+        ..(theme_consistent)()
+      
+      p <- ..(cb_apply)(p, discrete = TRUE, enabled = ..(cb_on))
+      p
+    })
   })
-
-  output$rvpplot <- metaRender(renderPlot,
-    {
-      # req(input$predictor)
-      ..(rvp_plot())
-    },
-    res = 96
-  )
-
+  
+  output$rvpplot <- metaRender(renderPlot, { ..(rvp_plot()) }, res = 96)
+  
   observeEvent(input$rvpplot_output_code, {
-    code <- expandChain(quote(library(dplyr)), quote(library(ggplot2)), output$rvpplot())
+    code <- expandChain(quote(library(ggplot2)), output$rvpplot())
     displayCodeModal(code)
   })
-
+  
   # Scale-Location plot (Spread-Location plot)
-  scaleloc_plot <- metaReactive({
-    ..(regModel()) %>%
-      ggplot(aes(.fitted, sqrt(abs(.stdresid)))) +
-      geom_point() +
-      stat_smooth(method = "loess", formula = y ~ x, col = "red") +
-      # geom_hline(yintercept = 0, col = "blue", linetype = "dashed") +
-      geom_hline(yintercept = 0.822179) +
-      xlab(paste("Fitted values for", ..(input$outcome))) +
-      ylab(expression(sqrt("|Standardised Residuals|"))) +
-      theme_bw()
+  # scaleloc_plot <- metaReactive({
+  #   ..(regModel()) %>%
+  #     ggplot(aes(.fitted, sqrt(abs(.stdresid)))) +
+  #     geom_point() +
+  #     stat_smooth(method = "loess", formula = y ~ x, col = "red") +
+  #     # geom_hline(yintercept = 0, col = "blue", linetype = "dashed") +
+  #     geom_hline(yintercept = 0.822179) +
+  #     xlab(paste("Fitted values for", ..(input$outcome))) +
+  #     ylab(expression(sqrt("|Standardised Residuals|"))) +
+  #     theme_bw()
+  #   })
+  # 
+  # # Render the Scale-Location plot in the app
+  # output$scalelocplot <- metaRender(renderPlot,
+  #   {
+  #     ..(scaleloc_plot())
+  #   },
+  #   res = 96
+  # )
+  # 
+  # # Display code for the Scale-Location plot in the modal
+  # observeEvent(input$scalelocplot_output_code, {
+  #   code <- expandChain(quote(library(dplyr)), quote(library(ggplot2)), output$scalelocplot())
+  #   displayCodeModal(code)
+  # })
+
+  # Scale–Location: sqrt(|standardised residuals|) vs fitted
+  scaleloc_plot <- metaReactive2({
+    cb_on <- isTRUE(input$cb_friendly)
+    
+    metaExpr({
+      df <- ggplot2::fortify(..(regModel()))
+      # 0.822179 is the expected value of sqrt(|Z|) with Z ~ N(0,1)
+      base_y <- data.frame(y = 0.822179)
+      
+      p <- ggplot(df, aes(x = .fitted, y = sqrt(abs(.stdresid)))) +
+        geom_point(alpha = 0.6) +
+        geom_smooth(method = "loess", formula = y ~ x, se = FALSE,
+                    aes(color = "LOESS", linetype = "LOESS")) +
+        geom_hline(data = base_y, aes(yintercept = y, color = "Reference", linetype = "Reference")) +
+        labs(
+          x = paste("Fitted values for", ..(input$outcome)),
+          y = expression(sqrt("|Standardised residuals|")),
+          color = NULL, linetype = NULL
+        ) +
+        ..(theme_consistent)()
+      
+      p <- ..(cb_apply)(p, discrete = TRUE, enabled = ..(cb_on))
+      p
+    })
   })
-
-  # Render the Scale-Location plot in the app
-  output$scalelocplot <- metaRender(renderPlot,
-    {
-      ..(scaleloc_plot())
-    },
-    res = 96
-  )
-
-  # Display code for the Scale-Location plot in the modal
+  
+  output$scalelocplot <- metaRender(renderPlot, { ..(scaleloc_plot()) }, res = 96)
+  
   observeEvent(input$scalelocplot_output_code, {
-    code <- expandChain(quote(library(dplyr)), quote(library(ggplot2)), output$scalelocplot())
+    code <- expandChain(quote(library(ggplot2)), output$scalelocplot())
     displayCodeModal(code)
   })
-
+  
 
   ## Variables in the model
   output$input <- renderPrint({
