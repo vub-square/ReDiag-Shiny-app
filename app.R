@@ -8,6 +8,15 @@
 
 options(shiny.maxRequestSize = 10000 * 1024^2)
 
+#options(bitmapType = "cairo")  # headless-friendly PNGs
+if (requireNamespace("ragg", quietly = TRUE)) {
+  options(device = function(...) ragg::agg_png(...))
+}
+summarytools::st_options(
+  use.x11 = FALSE,
+  plain.ascii = FALSE
+)
+
 ###############
 # Load packages
 ###############
